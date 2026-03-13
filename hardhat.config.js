@@ -16,5 +16,8 @@ module.exports = {
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY
-  }
+  },
+  accounts: process.env.PRIVATE_KEY && process.env.PRIVATE_KEY.length === 66
+  ? [process.env.PRIVATE_KEY]
+  : []
 };
