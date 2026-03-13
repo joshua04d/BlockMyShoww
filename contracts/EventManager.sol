@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+interface IEscrow {
+    function deposit(uint256 eventId, address organizer) external payable;
+}
+
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./TicketNFT.sol";
@@ -186,9 +190,8 @@ contract EventManager is Ownable, ReentrancyGuard {
         // Mint NFT
         uint256 tokenId = ticketNFT.mint(msg.sender, eventId, seat, tier, price);
 
-        // Forward ETH to Escrow
-        (bool sent, ) = escrow.call{value: msg.value}("");
-        require(sent, "ETH transfer to escrow failed");
+        // Forward ETH to Escrow with eventId + organizer
+        IEscrow(escrow).deposit{value: msg.value}(eventId, events[eventId].organizer);
 
         emit TicketPurchased(eventId, tokenId, msg.sender, seat, tier);
     }
