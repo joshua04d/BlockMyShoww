@@ -2,11 +2,11 @@
 // Fill these in after running: npx hardhat run scripts/deploy.js --network sepolia
 
 export const ADDRESSES = {
-  TicketPricing: "",
-  TicketNFT:     "",
-  EventManager:  "",
-  Escrow:        "",
-  TicketResale:  "",
+  TicketPricing: "0x03ffE6E9964CFd780687eDF8002B8BcB6989F3B3",
+  TicketNFT:     "0x72FE433D93bC0B0BF8CcbcAcc59a5b24EEAa9CbD",
+  EventManager:  "0xA96831F15AC3e4D350527c6D9924cf98c48f12D3",
+  Escrow:        "0x928bDD0a6E920601b6aFa054Beb363A498F60b83",
+  TicketResale:  "0x5F8A19C207468e004b1274fd073170fDc2fd44e3",
 }
 
 // ── ABIs (minimal — only functions we call from the frontend) ────────────

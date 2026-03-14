@@ -1,33 +1,64 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// You can also run a script with `npx hardhat run <script>`. If you do that, Hardhat
-// will compile your contracts, add the Hardhat Runtime Environment's members to the
-// global scope, and execute the script.
-const hre = require("hardhat");
+const { ethers } = require("hardhat");
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const unlockTime = currentTimestampInSeconds + 60;
+  const [deployer] = await ethers.getSigners();
+  console.log("Deploying with:", deployer.address);
 
-  const lockedAmount = hre.ethers.parseEther("0.001");
+  // 1. TicketPricing
+  const TicketPricing = await ethers.getContractFactory("TicketPricing");
+  const ticketPricing = await TicketPricing.deploy();
+  await ticketPricing.waitForDeployment();
+  console.log("TicketPricing deployed to:", await ticketPricing.getAddress());
 
-  const lock = await hre.ethers.deployContract("Lock", [unlockTime], {
-    value: lockedAmount,
-  });
+  // 2. TicketNFT
+  const TicketNFT = await ethers.getContractFactory("TicketNFT");
+  const ticketNFT = await TicketNFT.deploy();
+  await ticketNFT.waitForDeployment();
+  console.log("TicketNFT deployed to:", await ticketNFT.getAddress());
 
-  await lock.waitForDeployment();
-
-  console.log(
-    `Lock with ${ethers.formatEther(
-      lockedAmount
-    )}ETH and unlock timestamp ${unlockTime} deployed to ${lock.target}`
+  // 3. EventManager
+  const EventManager = await ethers.getContractFactory("EventManager");
+  const eventManager = await EventManager.deploy(
+    await ticketNFT.getAddress(),
+    await ticketPricing.getAddress()
   );
+  await eventManager.waitForDeployment();
+  console.log("EventManager deployed to:", await eventManager.getAddress());
+
+  // 4. Escrow
+  const Escrow = await ethers.getContractFactory("Escrow");
+  const escrow = await Escrow.deploy(await ticketNFT.getAddress());
+  await escrow.waitForDeployment();
+  console.log("Escrow deployed to:", await escrow.getAddress());
+
+  // 5. TicketResale
+  const TicketResale = await ethers.getContractFactory("TicketResale");
+  const ticketResale = await TicketResale.deploy(await ticketNFT.getAddress());
+  await ticketResale.waitForDeployment();
+  console.log("TicketResale deployed to:", await ticketResale.getAddress());
+
+  // ── Wire contracts together ──────────────────────────────────────────────
+
+  await ticketNFT.setEventManager(await eventManager.getAddress());
+  console.log("TicketNFT: EventManager set");
+
+  await eventManager.setEscrow(await escrow.getAddress());
+  console.log("EventManager: Escrow set");
+
+  await escrow.setEventManager(await eventManager.getAddress());
+  console.log("Escrow: EventManager set");
+
+  console.log("\n✅ All contracts deployed and wired.");
+  console.log({
+    TicketPricing: await ticketPricing.getAddress(),
+    TicketNFT:     await ticketNFT.getAddress(),
+    EventManager:  await eventManager.getAddress(),
+    Escrow:        await escrow.getAddress(),
+    TicketResale:  await ticketResale.getAddress(),
+  });
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
 });
